@@ -21,7 +21,7 @@ const ENT = {
   Grades: ['examId', 'studentId', 'score', 'status', 'note'],
   Lessons: ['groupId', 'date', 'title', 'objectives', 'plan', 'homework', 'notes', 'status'],
   Classes: ['groupId', 'date', 'title', 'maxScore', 'fee'],
-  Records: ['classId', 'studentId', 'attendance', 'homework', 'score', 'note', 'paid', 'amount']
+  Records: ['classId', 'studentId', 'attendance', 'homework', 'score', 'note', 'paid', 'amount', 'examStatus']
 };
 const RULES = {
   Groups: { req: ['name'], enums: { type: ['class', 'group'] } },
@@ -36,9 +36,9 @@ const RULES = {
   Grades: { req: ['examId', 'studentId'], enums: { status: ['absent'] } },
   Lessons: { req: ['title', 'date'], enums: { status: ['planned', 'done'] } },
   Classes: { req: ['groupId', 'date'] },
-  Records: { req: ['classId', 'studentId'], enums: { attendance: ['present', 'absent'], homework: ['done', 'missing'], paid: ['1', '0'] }, nums: ['score', 'amount'] }
+  Records: { req: ['classId', 'studentId'], enums: { attendance: ['present', 'absent'], homework: ['done', 'partial', 'missing'], paid: ['1', '0'], examStatus: ['notTaken'] }, nums: ['score', 'amount'] }
 };
-const SETUP_VERSION = '4';
+const SETUP_VERSION = '5';
 const SESSION_DAYS = 30;
 const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const PUBLIC = { ping: 1, login: 1, initPassword: 1, parentPortal: 1 };
@@ -456,7 +456,7 @@ function parentPortal(p) {
       const cl = {};
       rows('Classes').forEach(function (c) { if (c.deleted !== '1') cl[c.id] = c; });
       return rows('Records').filter(function (x) { return mine(x) && cl[x.classId]; })
-        .map(function (x) { const c = cl[x.classId]; return { date: c.date, title: c.title, max: c.maxScore, attendance: x.attendance, homework: x.homework, score: x.score, note: x.note, paid: x.paid, amount: x.amount }; });
+        .map(function (x) { const c = cl[x.classId]; return { date: c.date, title: c.title, max: c.maxScore, attendance: x.attendance, homework: x.homework, score: x.score, note: x.note, paid: x.paid, amount: x.amount, examStatus: x.examStatus }; });
     })(),
     settings: settings
   };

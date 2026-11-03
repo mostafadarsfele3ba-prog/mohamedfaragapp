@@ -1,5 +1,5 @@
 /* Service Worker: يشغّل التطبيق بدون إنترنت. غيّر VERSION عند رفع تحديث للكود. */
-const VERSION = 'tapp-mf-v1';
+const VERSION = 'tapp-mf-v2';
 const SHELL = ['./', 'index.html', 'config.js', 'css/style.css', 'js/logic.js', 'js/store.js', 'js/app.js', 'manifest.json', 'logo.jpg', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {
