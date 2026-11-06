@@ -65,7 +65,7 @@
   const money = v => (Number(v) || 0).toLocaleString('en-US') + ' ج';
   const frac = (a, b) => `<bdi dir="ltr">${esc(a)}${b ? ' / ' + esc(b) : ''}</bdi>`;
   const enNum = s => String(s ?? '').replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c)).replace(/[٫,]/g, '.').trim();
-  const ATT2 = { present: 'حاضر', late: 'حضر متأخراً', absent: 'غائب' };
+  const ATT2 = { present: 'حاضر', late: 'حضر متأخرًا', absent: 'غائب' };
   const HW3 = { done: 'حل كامل', partial: 'حل ناقص', missing: 'لم يحل' };
   function recSummary(recs, maxOf) {
     const s = { present: 0, late: 0, absent: 0, done: 0, partial: 0, missing: 0, notTaken: 0, paidN: 0, unpaidN: 0, paidSum: 0, scoreN: 0, pctSum: 0, pctN: 0, scoreSum: 0 };
@@ -270,7 +270,7 @@
         <div class="stu-h"><label class="chk"><input type="checkbox" data-chg="recSel" data-s="${s.id}" ${sel.has(s.id) ? 'checked' : ''} aria-label="تحديد"></label>
           <a class="grow" href="#/student/${s.id}"><b>${esc(s.name)}</b></a><span class="code small ltr">${esc(s.code)}</span></div>
         <div class="fields">
-          <div class="f full"><span>الحضور</span>${tg(s.id, 'attendance', [['present', 'حاضر', 'g'], ['late', 'حضر متأخراً', 'o'], ['absent', 'غائب', 'r']], r.attendance)}</div>
+          <div class="f full"><span>الحضور</span>${tg(s.id, 'attendance', [['present', 'حاضر', 'g'], ['late', 'حضر متأخرًا', 'o'], ['absent', 'غائب', 'r']], r.attendance)}</div>
           <div class="f full"><span>الواجب</span>${tg(s.id, 'homework', [['done', 'حل كامل', 'g'], ['partial', 'حل ناقص', 'o'], ['missing', 'لم يحل', 'r']], r.homework)}</div>
           <div class="f full"><span>درجة الامتحان</span><div class="sc"><input class="inp sm num" inputmode="decimal" data-chg="recScore" data-s="${s.id}" value="${esc(r.score || '')}" placeholder="${r.examStatus === 'notTaken' ? 'لم يختبر' : '—'}" aria-label="الدرجة">${max ? `<small class="muted">/ ${esc(max)}</small>` : ''}
             ${tg(s.id, 'examStatus', [['notTaken', 'حضر ولم يختبر', 'o']], r.examStatus, 'one')}</div></div>
@@ -283,7 +283,7 @@
     const bulk = `<details class="card bulk" ${state.bulkOpen ? 'open' : ''} data-bulk="1"><summary>⚡ إدخال / تعديل جماعي</summary>
       <form data-form="bulkRec" class="stack">
         <div class="seg big">${[['all', 'كل الطلاب (' + st.length + ')'], ['sel', 'المحددين فقط (' + sel.size + ')']].map(([v, t]) => `<label><input type="radio" name="target" value="${v}" ${(sel.size ? 'sel' : 'all') === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
-        <b class="small">الحضور</b>${radio('attendance', [['present', 'حاضر'], ['late', 'حضر متأخراً'], ['absent', 'غائب']])}
+        <b class="small">الحضور</b>${radio('attendance', [['present', 'حاضر'], ['late', 'حضر متأخرًا'], ['absent', 'غائب']])}
         <b class="small">الواجب</b>${radio('homework', [['done', 'حل كامل'], ['partial', 'حل ناقص'], ['missing', 'لم يحل']])}
         <b class="small">امتحان الحصة</b>${radio('examStatus', [['notTaken', 'حضر ولم يختبر']])}
         <b class="small">المصاريف</b>${radio('paid', [['1', 'دفع'], ['0', 'لم يدفع']])}
