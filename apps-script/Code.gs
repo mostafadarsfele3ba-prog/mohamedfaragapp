@@ -36,7 +36,7 @@ const RULES = {
   Grades: { req: ['examId', 'studentId'], enums: { status: ['absent'] } },
   Lessons: { req: ['title', 'date'], enums: { status: ['planned', 'done'] } },
   Classes: { req: ['groupId', 'date'] },
-  Records: { req: ['classId', 'studentId'], enums: { attendance: ['present', 'absent'], homework: ['done', 'partial', 'missing'], paid: ['1', '0'], examStatus: ['notTaken'] }, nums: ['score', 'amount'] }
+  Records: { req: ['classId', 'studentId'], enums: { attendance: ['present', 'late', 'absent'], homework: ['done', 'partial', 'missing'], paid: ['1', '0'], examStatus: ['notTaken'] }, nums: ['score', 'amount'] }
 };
 const SETUP_VERSION = '5';
 const SESSION_DAYS = 30;

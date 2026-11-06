@@ -65,30 +65,30 @@
   const money = v => (Number(v) || 0).toLocaleString('en-US') + ' ج';
   const frac = (a, b) => `<bdi dir="ltr">${esc(a)}${b ? ' / ' + esc(b) : ''}</bdi>`;
   const enNum = s => String(s ?? '').replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c)).replace(/[٫,]/g, '.').trim();
-  const ATT2 = { present: 'حاضر', absent: 'غائب' };
+  const ATT2 = { present: 'حاضر', late: 'حضر متأخراً', absent: 'غائب' };
   const HW3 = { done: 'حل كامل', partial: 'حل ناقص', missing: 'لم يحل' };
   function recSummary(recs, maxOf) {
-    const s = { present: 0, absent: 0, done: 0, partial: 0, missing: 0, notTaken: 0, paidN: 0, unpaidN: 0, paidSum: 0, scoreN: 0, pctSum: 0, pctN: 0, scoreSum: 0 };
+    const s = { present: 0, late: 0, absent: 0, done: 0, partial: 0, missing: 0, notTaken: 0, paidN: 0, unpaidN: 0, paidSum: 0, scoreN: 0, pctSum: 0, pctN: 0, scoreSum: 0 };
     recs.forEach(r => {
-      if (r.attendance === 'present') s.present++; else if (r.attendance === 'absent') s.absent++;
+      if (r.attendance === 'present') s.present++; else if (r.attendance === 'late') s.late++; else if (r.attendance === 'absent') s.absent++;
       if (r.homework === 'done') s.done++; else if (r.homework === 'partial') s.partial++; else if (r.homework === 'missing') s.missing++;
       if (r.examStatus === 'notTaken') s.notTaken++;
       if (r.paid === '1') { s.paidN++; s.paidSum += Number(r.amount) || 0; } else if (r.paid === '0') s.unpaidN++;
       if (r.score !== '' && r.score != null) { s.scoreN++; s.scoreSum += Number(r.score) || 0; const m = Number(maxOf(r)); if (m > 0) { s.pctN++; s.pctSum += (Number(r.score) || 0) * 100 / m; } }
     });
     const rate = (a, b) => a + b ? Math.round(a * 100 / (a + b)) : null;
-    s.attRate = rate(s.present, s.absent); s.hwRate = s.done + s.partial + s.missing ? Math.round((s.done + s.partial / 2) * 100 / (s.done + s.partial + s.missing)) : null;
+    s.attRate = rate(s.present + s.late, s.absent); s.hwRate = s.done + s.partial + s.missing ? Math.round((s.done + s.partial / 2) * 100 / (s.done + s.partial + s.missing)) : null;
     s.avgPct = s.pctN ? Math.round(s.pctSum / s.pctN) : null;
     s.avg = s.scoreN ? Math.round(s.scoreSum * 10 / s.scoreN) / 10 : null;
     return s;
   }
   const recStats = sm => `<div class="stats">
-      <div class="stat"><b>${pctTxt(sm.attRate)}</b><span>حضور الحصص · ${sm.absent} غياب</span></div>
+      <div class="stat"><b>${pctTxt(sm.attRate)}</b><span>حضور الحصص · ${sm.late} تأخير · ${sm.absent} غياب</span></div>
       <div class="stat"><b>${pctTxt(sm.hwRate)}</b><span>حل الواجب · ${sm.done} كامل · ${sm.partial} ناقص · ${sm.missing} لم يحل</span></div>
       <div class="stat"><b>${pctTxt(sm.avgPct)}</b><span>متوسط امتحانات الحصص${sm.notTaken ? ' · ' + sm.notTaken + ' لم يختبر' : ''}</span></div>
       <div class="stat"><b>${money(sm.paidSum)}</b><span>إجمالي المدفوع${sm.unpaidN ? ' · ' + sm.unpaidN + ' لم يدفع' : ''}</span></div></div>`;
   const recCell = { att: r => ATT2[r.attendance] || '—', hw: r => HW3[r.homework] || '—', paid: r => r.paid === '1' ? 'دفع' + (r.amount ? ' ' + money(r.amount) : '') : r.paid === '0' ? 'لم يدفع' : '—', score: r => r.examStatus === 'notTaken' ? 'حضر ولم يختبر' : r.score !== '' && r.score != null ? frac(r.score, r.max) : '—' };
-  const goodBad = (v, good, bad) => v === bad ? 'bad-t' : v === good ? 'ok-c' : v === 'partial' || v === 'notTaken' ? 'mid-t' : '';
+  const goodBad = (v, good, bad) => v === bad ? 'bad-t' : v === good ? 'ok-c' : v === 'partial' || v === 'notTaken' || v === 'late' ? 'mid-t' : '';
   const sched = g => { try { return JSON.parse((g && g.schedule) || '[]'); } catch (e) { return []; } };
   const tpl = k => ((S().templates || {})[k]) || TPL_FB[k] || '';
   const passPct = () => Number((S().grading || {}).passPercent) || 50;
@@ -251,7 +251,7 @@
       ${cl.length ? `<div class="card list">${shown.map(c => {
         const sm = recSummary(st.map(s => rec(c.id, s.id)).filter(Boolean), () => c.maxScore);
         return `<a class="li" href="#/class/${c.id}"><span class="grow"><b>${esc(clsTitle(c))}</b><small class="muted">${fmtFull(c.date)}</small>
-          <small>✅ ${sm.present} حاضر · ❌ ${sm.absent} غائب · 📚 ${sm.done} حل كامل${sm.partial ? ' · ' + sm.partial + ' ناقص' : ''} · 💰 ${sm.paidN} دفع</small></span><span class="muted">‹</span></a>`;
+          <small>✅ ${sm.present} حاضر${sm.late ? ' · ⏰ ' + sm.late + ' متأخر' : ''} · ❌ ${sm.absent} غائب · 📚 ${sm.done} حل كامل${sm.partial ? ' · ' + sm.partial + ' ناقص' : ''} · 💰 ${sm.paidN} دفع</small></span><span class="muted">‹</span></a>`;
       }).join('')}</div>${cl.length > shown.length ? `<a class="btn block" href="#/group/${g.id}?cl=all">عرض كل الحصص (${cl.length})</a>` : ''}`
       : `<p class="muted small card">اضغط «📅 حصة جديدة» لتسجيل الحضور والواجب ودرجة الامتحان والمصاريف لكل طالب.</p>`}`;
   }
@@ -270,11 +270,11 @@
         <div class="stu-h"><label class="chk"><input type="checkbox" data-chg="recSel" data-s="${s.id}" ${sel.has(s.id) ? 'checked' : ''} aria-label="تحديد"></label>
           <a class="grow" href="#/student/${s.id}"><b>${esc(s.name)}</b></a><span class="code small ltr">${esc(s.code)}</span></div>
         <div class="fields">
-          <div class="f"><span>الحضور</span>${tg(s.id, 'attendance', [['present', 'حاضر'], ['absent', 'غائب']], r.attendance)}</div>
-          <div class="f"><span>المصاريف</span>${tg(s.id, 'paid', [['1', 'دفع'], ['0', 'لم يدفع']], r.paid)}</div>
+          <div class="f full"><span>الحضور</span>${tg(s.id, 'attendance', [['present', 'حاضر', 'g'], ['late', 'حضر متأخراً', 'o'], ['absent', 'غائب', 'r']], r.attendance)}</div>
           <div class="f full"><span>الواجب</span>${tg(s.id, 'homework', [['done', 'حل كامل', 'g'], ['partial', 'حل ناقص', 'o'], ['missing', 'لم يحل', 'r']], r.homework)}</div>
-          <div class="f"><span>درجة الامتحان</span><div class="sc"><input class="inp sm num" inputmode="decimal" data-chg="recScore" data-s="${s.id}" value="${esc(r.score || '')}" placeholder="${r.examStatus === 'notTaken' ? 'لم يختبر' : '—'}" aria-label="الدرجة">${max ? `<small class="muted">/ ${esc(max)}</small>` : ''}</div>
-            ${tg(s.id, 'examStatus', [['notTaken', 'حضر ولم يختبر', 'o']], r.examStatus, 'one')}</div>
+          <div class="f full"><span>درجة الامتحان</span><div class="sc"><input class="inp sm num" inputmode="decimal" data-chg="recScore" data-s="${s.id}" value="${esc(r.score || '')}" placeholder="${r.examStatus === 'notTaken' ? 'لم يختبر' : '—'}" aria-label="الدرجة">${max ? `<small class="muted">/ ${esc(max)}</small>` : ''}
+            ${tg(s.id, 'examStatus', [['notTaken', 'حضر ولم يختبر', 'o']], r.examStatus, 'one')}</div></div>
+          <div class="f"><span>المصاريف</span>${tg(s.id, 'paid', [['1', 'دفع'], ['0', 'لم يدفع']], r.paid)}</div>
           <div class="f"><span>المبلغ</span><div class="sc"><input class="inp sm num" inputmode="decimal" data-chg="recAmount" data-s="${s.id}" value="${esc(r.amount || '')}" placeholder="${esc(fee || '—')}" aria-label="المبلغ"><small class="muted">ج</small></div></div>
           <div class="f full"><input class="inp sm" data-chg="recNote" data-s="${s.id}" value="${esc(r.note || '')}" placeholder="📝 ملاحظات (تظهر لولي الأمر)" aria-label="ملاحظات"></div>
         </div></div>`;
@@ -283,7 +283,7 @@
     const bulk = `<details class="card bulk" ${state.bulkOpen ? 'open' : ''} data-bulk="1"><summary>⚡ إدخال / تعديل جماعي</summary>
       <form data-form="bulkRec" class="stack">
         <div class="seg big">${[['all', 'كل الطلاب (' + st.length + ')'], ['sel', 'المحددين فقط (' + sel.size + ')']].map(([v, t]) => `<label><input type="radio" name="target" value="${v}" ${(sel.size ? 'sel' : 'all') === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
-        <b class="small">الحضور</b>${radio('attendance', [['present', 'حاضر'], ['absent', 'غائب']])}
+        <b class="small">الحضور</b>${radio('attendance', [['present', 'حاضر'], ['late', 'حضر متأخراً'], ['absent', 'غائب']])}
         <b class="small">الواجب</b>${radio('homework', [['done', 'حل كامل'], ['partial', 'حل ناقص'], ['missing', 'لم يحل']])}
         <b class="small">امتحان الحصة</b>${radio('examStatus', [['notTaken', 'حضر ولم يختبر']])}
         <b class="small">المصاريف</b>${radio('paid', [['1', 'دفع'], ['0', 'لم يدفع']])}
@@ -296,7 +296,7 @@
     return {
       title: clsTitle(c), sub: gName(c.groupId) + ' · ' + fmtFull(c.date), back: '#/group/' + c.groupId,
       body: `<div class="stats">
-          <div class="stat"><b>${sm.present} <small>من ${st.length}</small></b><span>حاضر · ${sm.absent} غائب</span></div>
+          <div class="stat"><b>${sm.present + sm.late} <small>من ${st.length}</small></b><span>حاضر${sm.late ? ' (منهم ' + sm.late + ' متأخر)' : ''} · ${sm.absent} غائب</span></div>
           <div class="stat"><b>${sm.done}</b><span>حل كامل · ${sm.partial} ناقص · ${sm.missing} لم يحل</span></div>
           <div class="stat"><b>${sm.avg == null ? '—' : sm.avg}</b><span>متوسط الدرجة${max ? ' من ' + esc(max) : ''}${sm.notTaken ? ' · ' + sm.notTaken + ' لم يختبر' : ''}</span></div>
           <div class="stat"><b>${money(sm.paidSum)}</b><span>${sm.paidN} دفع · ${sm.unpaidN} لم يدفع</span></div></div>
@@ -596,7 +596,7 @@
         const rs = (d.records || []).slice().sort((x, y) => y.date.localeCompare(x.date));
         if (!rs.length) return '';
         const item = (k, v, cls) => `<div class="pi ${cls || ''}"><small>${k}</small><b>${v}</b></div>`;
-        const gb = (v, g, b) => v === b ? 'bad' : v === g ? 'good' : v === 'partial' || v === 'notTaken' ? 'mid' : '';
+        const gb = (v, g, b) => v === b ? 'bad' : v === g ? 'good' : v === 'partial' || v === 'notTaken' || v === 'late' ? 'mid' : '';
         return `<h3>📅 الحصص</h3>${recStats(recSummary(rs, r => r.max))}${rs.map(r => `<div class="card prec"><div class="prec-h"><b>${fmtFull(r.date)}</b>${r.title ? `<small class="muted">${esc(r.title)}</small>` : ''}</div>
           <div class="pgrid">${item('الحضور', recCell.att(r), gb(r.attendance, 'present', 'absent'))}${item('الواجب', recCell.hw(r), gb(r.homework, 'done', 'missing'))}${item('درجة الامتحان', recCell.score(r), r.examStatus === 'notTaken' ? 'mid' : '')}${item('المصاريف', recCell.paid(r), gb(r.paid, '1', '0'))}</div>
           ${r.note ? `<p class="pnote">📝 ${esc(r.note)}</p>` : ''}</div>`).join('')}`;
@@ -950,11 +950,11 @@
         <button class="btn pri">حفظ</button></form>`;
     }
     if (m.type === 'class') {
-      const c = m.c || {}, prev = classesOf(c.groupId || m.gid)[0] || {};
+      const c = m.c || {};
       return `<form data-form="classForm" class="stack"><h2>${c.id ? 'تعديل الحصة' : 'حصة جديدة'}</h2>
         <label class="lbl">التاريخ<input class="inp" type="date" name="date" value="${esc(c.date || L.today())}" required></label>
         <label class="lbl">عنوان الحصة (اختياري)<input class="inp" name="title" value="${esc(c.title || '')}" placeholder="مثال: الدرس الثالث، النعت"></label>
-        <div class="row2"><label class="lbl">الدرجة النهائية للامتحان<input class="inp" name="maxScore" inputmode="decimal" value="${esc(c.id ? c.maxScore : (prev.maxScore || '10'))}"></label>
+        <div class="row2"><label class="lbl">الدرجة النهائية للامتحان<input class="inp" name="maxScore" inputmode="decimal" value="${esc(c.id ? c.maxScore : (CONFIG.defaultMaxScore || '10'))}"></label>
         <label class="lbl">المصاريف (ج)<input class="inp" name="fee" inputmode="decimal" value="${esc(c.id ? c.fee : ((Store.get('Groups', m.gid) || {}).fee || ''))}" placeholder="اختياري"></label></div>
         <button class="btn pri">${c.id ? 'حفظ' : 'إنشاء وبدء التسجيل'}</button></form>`;
     }
@@ -1133,7 +1133,7 @@
     rows.forEach(r => {
       const aid = attId(r.studentId, c.date), cur = Store.get('Attendance', aid);
       if (r.attendance && (!cur || cur.status !== r.attendance)) att.push({ id: aid, studentId: r.studentId, groupId: c.groupId, date: c.date, status: r.attendance, note: cur ? cur.note : '', deleted: '' });
-      else if (!r.attendance && cur && (cur.status === 'present' || cur.status === 'absent')) att.push({ id: aid, deleted: '1' });
+      else if (!r.attendance && cur && (cur.status === 'present' || cur.status === 'absent' || cur.status === 'late')) att.push({ id: aid, deleted: '1' });
     });
     if (att.length) Store.saveMany('Attendance', att);
   }

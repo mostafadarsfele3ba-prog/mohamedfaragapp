@@ -312,7 +312,8 @@ input[type=color] { width: 44px; height: 44px; border: 1px solid var(--bd); bord
 .lbl { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--mut); }
 .stu .chk { margin: 0; }
 .tg button.on.o { background: var(--warn); color: #fff; }
-.tg.one { margin-top: 6px; }
+.tg.one { flex: 0 0 auto; }
 .tg.one button { font-size: .78rem; min-height: 34px; }
 .tbl td.mid-t { color: var(--warn); font-weight: 700; }
 .pi.mid { border-inline-start-color: var(--warn); } .pi.mid b { color: var(--warn); }
+.sc .inp.num { max-width: 110px; }
