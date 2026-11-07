@@ -317,3 +317,5 @@ input[type=color] { width: 44px; height: 44px; border: 1px solid var(--bd); bord
 .tbl td.mid-t { color: var(--warn); font-weight: 700; }
 .pi.mid { border-inline-start-color: var(--warn); } .pi.mid b { color: var(--warn); }
 .sc .inp.num { max-width: 110px; }
+.stats .stat.wide { grid-column: 1 / -1; }
+.pgrid .pi:last-child:nth-child(odd) { grid-column: 1 / -1; }

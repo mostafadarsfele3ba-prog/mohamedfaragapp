@@ -67,17 +67,20 @@
   const enNum = s => String(s ?? '').replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c)).replace(/[٫,]/g, '.').trim();
   const ATT2 = { present: 'حاضر', late: 'حضر متأخرًا', absent: 'غائب' };
   const HW3 = { done: 'حل كامل', partial: 'حل ناقص', missing: 'لم يحل' };
+  const ON3 = { done: 'حل', partial: 'الحل ناقص', missing: 'لم يحل' };
   function recSummary(recs, maxOf) {
-    const s = { present: 0, late: 0, absent: 0, done: 0, partial: 0, missing: 0, notTaken: 0, paidN: 0, unpaidN: 0, paidSum: 0, scoreN: 0, pctSum: 0, pctN: 0, scoreSum: 0 };
+    const s = { present: 0, late: 0, absent: 0, done: 0, partial: 0, missing: 0, notTaken: 0, onDone: 0, onPartial: 0, onMissing: 0, paidN: 0, unpaidN: 0, paidSum: 0, scoreN: 0, pctSum: 0, pctN: 0, scoreSum: 0 };
     recs.forEach(r => {
       if (r.attendance === 'present') s.present++; else if (r.attendance === 'late') s.late++; else if (r.attendance === 'absent') s.absent++;
       if (r.homework === 'done') s.done++; else if (r.homework === 'partial') s.partial++; else if (r.homework === 'missing') s.missing++;
       if (r.examStatus === 'notTaken') s.notTaken++;
+      if (r.online === 'done') s.onDone++; else if (r.online === 'partial') s.onPartial++; else if (r.online === 'missing') s.onMissing++;
       if (r.paid === '1') { s.paidN++; s.paidSum += Number(r.amount) || 0; } else if (r.paid === '0') s.unpaidN++;
       if (r.score !== '' && r.score != null) { s.scoreN++; s.scoreSum += Number(r.score) || 0; const m = Number(maxOf(r)); if (m > 0) { s.pctN++; s.pctSum += (Number(r.score) || 0) * 100 / m; } }
     });
     const rate = (a, b) => a + b ? Math.round(a * 100 / (a + b)) : null;
     s.attRate = rate(s.present + s.late, s.absent); s.hwRate = s.done + s.partial + s.missing ? Math.round((s.done + s.partial / 2) * 100 / (s.done + s.partial + s.missing)) : null;
+    const onT = s.onDone + s.onPartial + s.onMissing; s.onRate = onT ? Math.round((s.onDone + s.onPartial / 2) * 100 / onT) : null;
     s.avgPct = s.pctN ? Math.round(s.pctSum / s.pctN) : null;
     s.avg = s.scoreN ? Math.round(s.scoreSum * 10 / s.scoreN) / 10 : null;
     return s;
@@ -85,9 +88,10 @@
   const recStats = sm => `<div class="stats">
       <div class="stat"><b>${pctTxt(sm.attRate)}</b><span>حضور الحصص · ${sm.late} تأخير · ${sm.absent} غياب</span></div>
       <div class="stat"><b>${pctTxt(sm.hwRate)}</b><span>حل الواجب · ${sm.done} كامل · ${sm.partial} ناقص · ${sm.missing} لم يحل</span></div>
+      <div class="stat"><b>${pctTxt(sm.onRate)}</b><span>الاختبار الإلكتروني · ${sm.onDone} حل · ${sm.onPartial} ناقص · ${sm.onMissing} لم يحل</span></div>
       <div class="stat"><b>${pctTxt(sm.avgPct)}</b><span>متوسط امتحانات الحصص${sm.notTaken ? ' · ' + sm.notTaken + ' لم يختبر' : ''}</span></div>
-      <div class="stat"><b>${money(sm.paidSum)}</b><span>إجمالي المدفوع${sm.unpaidN ? ' · ' + sm.unpaidN + ' لم يدفع' : ''}</span></div></div>`;
-  const recCell = { att: r => ATT2[r.attendance] || '—', hw: r => HW3[r.homework] || '—', paid: r => r.paid === '1' ? 'دفع' + (r.amount ? ' ' + money(r.amount) : '') : r.paid === '0' ? 'لم يدفع' : '—', score: r => r.examStatus === 'notTaken' ? 'حضر ولم يختبر' : r.score !== '' && r.score != null ? frac(r.score, r.max) : '—' };
+      <div class="stat wide"><b>${money(sm.paidSum)}</b><span>إجمالي المدفوع${sm.unpaidN ? ' · ' + sm.unpaidN + ' لم يدفع' : ''}</span></div></div>`;
+  const recCell = { att: r => ATT2[r.attendance] || '—', hw: r => HW3[r.homework] || '—', on: r => ON3[r.online] || '—', paid: r => r.paid === '1' ? 'دفع' + (r.amount ? ' ' + money(r.amount) : '') : r.paid === '0' ? 'لم يدفع' : '—', score: r => r.examStatus === 'notTaken' ? 'حضر ولم يختبر' : r.score !== '' && r.score != null ? frac(r.score, r.max) : '—' };
   const goodBad = (v, good, bad) => v === bad ? 'bad-t' : v === good ? 'ok-c' : v === 'partial' || v === 'notTaken' || v === 'late' ? 'mid-t' : '';
   const sched = g => { try { return JSON.parse((g && g.schedule) || '[]'); } catch (e) { return []; } };
   const tpl = k => ((S().templates || {})[k]) || TPL_FB[k] || '';
@@ -272,6 +276,7 @@
         <div class="fields">
           <div class="f full"><span>الحضور</span>${tg(s.id, 'attendance', [['present', 'حاضر', 'g'], ['late', 'حضر متأخرًا', 'o'], ['absent', 'غائب', 'r']], r.attendance)}</div>
           <div class="f full"><span>الواجب</span>${tg(s.id, 'homework', [['done', 'حل كامل', 'g'], ['partial', 'حل ناقص', 'o'], ['missing', 'لم يحل', 'r']], r.homework)}</div>
+          <div class="f full"><span>حل الاختبار الإلكتروني</span>${tg(s.id, 'online', [['done', 'حل', 'g'], ['missing', 'لم يحل', 'r'], ['partial', 'الحل ناقص', 'o']], r.online)}</div>
           <div class="f full"><span>درجة الامتحان</span><div class="sc"><input class="inp sm num" inputmode="decimal" data-chg="recScore" data-s="${s.id}" value="${esc(r.score || '')}" placeholder="${r.examStatus === 'notTaken' ? 'لم يختبر' : '—'}" aria-label="الدرجة">${max ? `<small class="muted">/ ${esc(max)}</small>` : ''}
             ${tg(s.id, 'examStatus', [['notTaken', 'حضر ولم يختبر', 'o']], r.examStatus, 'one')}</div></div>
           <div class="f"><span>المصاريف</span>${tg(s.id, 'paid', [['1', 'دفع'], ['0', 'لم يدفع']], r.paid)}</div>
@@ -285,6 +290,7 @@
         <div class="seg big">${[['all', 'كل الطلاب (' + st.length + ')'], ['sel', 'المحددين فقط (' + sel.size + ')']].map(([v, t]) => `<label><input type="radio" name="target" value="${v}" ${(sel.size ? 'sel' : 'all') === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
         <b class="small">الحضور</b>${radio('attendance', [['present', 'حاضر'], ['late', 'حضر متأخرًا'], ['absent', 'غائب']])}
         <b class="small">الواجب</b>${radio('homework', [['done', 'حل كامل'], ['partial', 'حل ناقص'], ['missing', 'لم يحل']])}
+        <b class="small">حل الاختبار الإلكتروني</b>${radio('online', [['done', 'حل'], ['missing', 'لم يحل'], ['partial', 'الحل ناقص']])}
         <b class="small">امتحان الحصة</b>${radio('examStatus', [['notTaken', 'حضر ولم يختبر']])}
         <b class="small">المصاريف</b>${radio('paid', [['1', 'دفع'], ['0', 'لم يدفع']])}
         <div class="row2"><label>المبلغ<input class="inp" name="amount" inputmode="decimal" placeholder="${esc(fee || 'بدون تغيير')}"></label>
@@ -297,9 +303,10 @@
       title: clsTitle(c), sub: gName(c.groupId) + ' · ' + fmtFull(c.date), back: '#/group/' + c.groupId,
       body: `<div class="stats">
           <div class="stat"><b>${sm.present + sm.late} <small>من ${st.length}</small></b><span>حاضر${sm.late ? ' (منهم ' + sm.late + ' متأخر)' : ''} · ${sm.absent} غائب</span></div>
-          <div class="stat"><b>${sm.done}</b><span>حل كامل · ${sm.partial} ناقص · ${sm.missing} لم يحل</span></div>
+          <div class="stat"><b>${sm.done}</b><span>📚 واجب: حل كامل · ${sm.partial} ناقص · ${sm.missing} لم يحل</span></div>
+          <div class="stat"><b>${sm.onDone}</b><span>💻 اختبار إلكتروني: حل · ${sm.onPartial} ناقص · ${sm.onMissing} لم يحل</span></div>
           <div class="stat"><b>${sm.avg == null ? '—' : sm.avg}</b><span>متوسط الدرجة${max ? ' من ' + esc(max) : ''}${sm.notTaken ? ' · ' + sm.notTaken + ' لم يختبر' : ''}</span></div>
-          <div class="stat"><b>${money(sm.paidSum)}</b><span>${sm.paidN} دفع · ${sm.unpaidN} لم يدفع</span></div></div>
+          <div class="stat wide"><b>${money(sm.paidSum)}</b><span>${sm.paidN} دفع · ${sm.unpaidN} لم يدفع</span></div></div>
         <div class="quick">
           <button class="btn sm" data-act="fillAll" data-f="attendance" data-v="present">✅ الباقي حاضر</button>
           <button class="btn sm" data-act="fillAll" data-f="homework" data-v="done">📚 الباقي حل كامل</button>
@@ -317,9 +324,9 @@
       return c ? Object.assign({}, r, { date: c.date, title: c.title, max: c.maxScore }) : null;
     }).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date));
   }
-  const classTable = rs => `<div class="card scroll"><table class="tbl"><thead><tr><th>الحصة</th><th>الحضور</th><th>الواجب</th><th>الدرجة</th><th>المصاريف</th><th>ملاحظات</th></tr></thead><tbody>${rs.map(r => `<tr>
+  const classTable = rs => `<div class="card scroll"><table class="tbl"><thead><tr><th>الحصة</th><th>الحضور</th><th>الواجب</th><th>الاختبار الإلكتروني</th><th>الدرجة</th><th>المصاريف</th><th>ملاحظات</th></tr></thead><tbody>${rs.map(r => `<tr>
     <td class="nm"><a href="#/class/${r.classId}">${fmtDate(r.date)}</a>${r.title ? `<small class="muted d">${esc(r.title)}</small>` : ''}</td>
-    <td class="${goodBad(r.attendance, 'present', 'absent')}">${recCell.att(r)}</td><td class="${goodBad(r.homework, 'done', 'missing')}">${recCell.hw(r)}</td>
+    <td class="${goodBad(r.attendance, 'present', 'absent')}">${recCell.att(r)}</td><td class="${goodBad(r.homework, 'done', 'missing')}">${recCell.hw(r)}</td><td class="${goodBad(r.online, 'done', 'missing')}">${recCell.on(r)}</td>
     <td class="${r.examStatus === 'notTaken' ? 'mid-t' : ''}">${recCell.score(r)}</td><td class="${goodBad(r.paid, '1', '0')}">${recCell.paid(r)}</td><td class="nm">${esc(r.note || '')}</td></tr>`).join('')}</tbody></table></div>`;
 
   // ───────── الطلاب ─────────
@@ -598,7 +605,7 @@
         const item = (k, v, cls) => `<div class="pi ${cls || ''}"><small>${k}</small><b>${v}</b></div>`;
         const gb = (v, g, b) => v === b ? 'bad' : v === g ? 'good' : v === 'partial' || v === 'notTaken' || v === 'late' ? 'mid' : '';
         return `<h3>📅 الحصص</h3>${recStats(recSummary(rs, r => r.max))}${rs.map(r => `<div class="card prec"><div class="prec-h"><b>${fmtFull(r.date)}</b>${r.title ? `<small class="muted">${esc(r.title)}</small>` : ''}</div>
-          <div class="pgrid">${item('الحضور', recCell.att(r), gb(r.attendance, 'present', 'absent'))}${item('الواجب', recCell.hw(r), gb(r.homework, 'done', 'missing'))}${item('درجة الامتحان', recCell.score(r), r.examStatus === 'notTaken' ? 'mid' : '')}${item('المصاريف', recCell.paid(r), gb(r.paid, '1', '0'))}</div>
+          <div class="pgrid">${item('الحضور', recCell.att(r), gb(r.attendance, 'present', 'absent'))}${item('الواجب', recCell.hw(r), gb(r.homework, 'done', 'missing'))}${item('الاختبار الإلكتروني', recCell.on(r), gb(r.online, 'done', 'missing'))}${item('درجة الامتحان', recCell.score(r), r.examStatus === 'notTaken' ? 'mid' : '')}${item('المصاريف', recCell.paid(r), gb(r.paid, '1', '0'))}</div>
           ${r.note ? `<p class="pnote">📝 ${esc(r.note)}</p>` : ''}</div>`).join('')}`;
       })()}
       ${p.whatsapp ? `<a class="btn wa block" target="_blank" href="${L.waLink(p.whatsapp, CONFIG.countryCode, 'السلام عليكم، بخصوص الطالب/ة ' + d.student.name)}">📲 تواصل مع المدرس</a>` : ''}
@@ -1113,7 +1120,7 @@
   // ── تسجيل الحصة ──
   const curClass = () => state.route === 'class' ? Store.get('Classes', parseHash().parts[1]) : null;
   function recRow(c, sid, patch) {
-    const cur = rec(c.id, sid) || { id: recId(c.id, sid), classId: c.id, studentId: sid, attendance: '', homework: '', score: '', note: '', paid: '', amount: '', examStatus: '' };
+    const cur = rec(c.id, sid) || { id: recId(c.id, sid), classId: c.id, studentId: sid, attendance: '', homework: '', score: '', note: '', paid: '', amount: '', examStatus: '', online: '' };
     return Object.assign({}, cur, patch, { deleted: '' });
   }
   function numVal(v, label) {
@@ -1324,10 +1331,11 @@
       const targets = f.target === 'sel' ? st.filter(s => sel.has(s.id)) : st;
       if (!targets.length) throw new Error(f.target === 'sel' ? 'لم تحدد أي طالب' : 'لا يوجد طلاب');
       const patch = {};
-      if (f.clear) Object.assign(patch, { attendance: '', homework: '', score: '', note: '', paid: '', amount: '', examStatus: '' });
+      if (f.clear) Object.assign(patch, { attendance: '', homework: '', score: '', note: '', paid: '', amount: '', examStatus: '', online: '' });
       else {
         if (f.attendance) patch.attendance = f.attendance;
         if (f.homework) patch.homework = f.homework;
+        if (f.online) patch.online = f.online;
         if (f.paid) patch.paid = f.paid;
         const sc = scoreVal(f.score, c); if (sc !== '') { patch.score = sc; patch.examStatus = ''; }
         if (f.examStatus) { patch.examStatus = f.examStatus; patch.score = ''; if (!patch.attendance) patch.attendance = 'present'; }
